@@ -9,7 +9,7 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -29,11 +29,35 @@ async function run() {
     const myDB = client.db("BookDrop");
     const userCollection = myDB.collection("user");
 
-    app.get("/users", (req, res) => {
+    // get all users
+    app.get("/api/users", (req, res) => {
       const result = userCollection.find().toArray();
       result.then((data) => {
         res.send(data);
       });
+    });
+    // delete user by id
+    app.delete("/api/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      console.log(result);
+
+      res.send(result);
+    });
+    // update user role by id
+    app.patch("/api/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const role = req.body.role;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: role,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      console.log("update from  backend",result);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
