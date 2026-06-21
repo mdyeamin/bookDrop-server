@@ -28,7 +28,8 @@ async function run() {
 
     const myDB = client.db("BookDrop");
     const userCollection = myDB.collection("user");
-
+    const bookCollection = myDB.collection("books");
+    // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users
     app.get("/api/users", (req, res) => {
       const result = userCollection.find().toArray();
@@ -41,7 +42,6 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
-      console.log(result);
 
       res.send(result);
     });
@@ -56,9 +56,20 @@ async function run() {
         },
       };
       const result = await userCollection.updateOne(filter, updateDoc);
-      console.log("update from  backend",result);
+      console.log("update from  backend", result);
       res.send(result);
     });
+    // user related api end here +*+*+*+*+*+*+*+*+**+*
+    // Books related api Start here +*+*+*+*+*+*+*+*+**+*
+    // post book by librarian
+    app.post("/api/books", async (req, res) => {
+      const book = req.body;
+      const result = await bookCollection.insertOne(book);
+      console.log("book added from backend", result);
+      res.send(result);
+    });
+
+    // Books related api end here +*+*+*+*+*+*+*+*+**+*
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
