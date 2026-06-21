@@ -65,14 +65,20 @@ async function run() {
     app.post("/api/books", async (req, res) => {
       const book = req.body;
       const result = await bookCollection.insertOne(book);
-      
+
       res.send(result);
     });
-    // get all books
-    app.get("/api/books", async(req, res) => {
-      const result = await bookCollection.find().toArray();
-      console.log(result);
-      res.send(result); 
+    // get all books by current librarian
+    app.get("/api/books", async (req, res) => {
+      const userId = req.query.userid;
+      const query = {};
+      if (userId) {
+        query.userId = userId;
+      }
+
+      const result = await bookCollection.find(query).toArray();
+      console.log(userId);
+      res.send(result);
     });
 
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
