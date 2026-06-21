@@ -65,8 +65,14 @@ async function run() {
     app.post("/api/books", async (req, res) => {
       const book = req.body;
       const result = await bookCollection.insertOne(book);
-      console.log("book added from backend", result);
+      
       res.send(result);
+    });
+    // get all books
+    app.get("/api/books", async(req, res) => {
+      const result = await bookCollection.find().toArray();
+      console.log(result);
+      res.send(result); 
     });
 
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
