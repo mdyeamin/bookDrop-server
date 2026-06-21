@@ -5,9 +5,6 @@ const cors = require("cors");
 require("dotenv").config();
 app.use(cors());
 app.use(express.json());
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGODB_URI;
@@ -23,12 +20,15 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-
     const myDB = client.db("BookDrop");
     const userCollection = myDB.collection("user");
     const bookCollection = myDB.collection("books");
+    app.get("/", (req, res) => {
+      res.send("Hello World!");
+    });
+    // Connect the client to the server	(optional starting in v4.7)
+    await client.connect();
+
     // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users
     app.get("/api/users", (req, res) => {
@@ -64,7 +64,12 @@ async function run() {
     // post book by librarian
     app.post("/api/books", async (req, res) => {
       const book = req.body;
-      const result = await bookCollection.insertOne(book);
+      const payload = {
+        ...book,
+        createdAt: new Date(),
+      };
+
+      const result = await bookCollection.insertOne(payload);
 
       res.send(result);
     });
@@ -81,6 +86,15 @@ async function run() {
       res.send(result);
     });
 
+    //delete librarian book by id
+    app.delete("/api/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookCollection.deleteOne(query);
+
+      res.send(result);
+    });
+
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
 
     // Send a ping to confirm a successful connection
@@ -93,8 +107,9 @@ async function run() {
     // await client.close();
   }
 }
-run().catch(console.dir);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+run().catch(console.dir);
+
