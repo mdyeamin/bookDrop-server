@@ -23,6 +23,7 @@ async function run() {
     const myDB = client.db("BookDrop");
     const userCollection = myDB.collection("user");
     const bookCollection = myDB.collection("books");
+    const paymentCollection = myDB.collection("payments"); // user payment korar por ekhane data asbe
     app.get("/", (req, res) => {
       res.send("Hello World!");
     });
@@ -129,6 +130,29 @@ async function run() {
       res.send(result);
     });
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
+    // Payment related api start here +*+*+*+*+*+*+*+*+**+*
+    app.post("/api/payment", async (req, res) => {
+      const { sessionId, userId, price, userEmail, title, productId } =
+        req.body;
+
+      const isExist = await paymentCollection.findOne({ sessionId });
+
+      if (isExist) {
+        return res.send({ message: "already exist" });
+      }
+
+      const result = await paymentCollection.insertOne({
+        sessionId,
+        userId,
+        price,
+        userEmail,
+        title,
+        productId,
+      });
+
+      res.send(result);
+    });
+    // Payment related api end here +*+*+*+*+*+*+*+*+**+*
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
