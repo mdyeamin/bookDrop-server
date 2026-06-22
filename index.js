@@ -86,15 +86,48 @@ async function run() {
       res.send(result);
     });
 
-    //delete librarian book by id
+    //delete librarian's book by id
     app.delete("/api/books/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await bookCollection.deleteOne(query);
+      const filter = { _id: new ObjectId(id) };
+      const result = await bookCollection.deleteOne(filter);
 
       res.send(result);
     });
 
+    // edit librarians's book by id
+    app.patch("/api/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const bookInfo = req.body;
+      const updateDoc = {
+        $set: {
+          ...bookInfo,
+          updatedAt: new Date(),
+        },
+      };
+      const result = await bookCollection.updateOne(filter, updateDoc);
+      console.log("after updateBook", result);
+
+      res.send(result);
+    });
+
+    // get all books for homepage (non-secure)
+    app.get("/api/public/books", async (req, res) => {
+      const result = await bookCollection.find().toArray();
+
+      res.send(result);
+    });
+
+    // get single book by id (for details page)
+    app.get("/api/public/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id),
+      };
+      const result = await bookCollection.findOne(filter);
+      res.send(result);
+    });
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
 
     // Send a ping to confirm a successful connection
@@ -112,4 +145,3 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
 run().catch(console.dir);
-
