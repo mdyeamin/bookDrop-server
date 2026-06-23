@@ -153,6 +153,56 @@ async function run() {
       res.send(result);
     });
     // Payment related api end here +*+*+*+*+*+*+*+*+**+*
+    // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
+    // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
+    app.get("/api/my/order", async (req, res) => {
+      try {
+        const userId = req.query.userid;
+
+        const matchStage = userId ? { userId: userId } : {};
+
+        const result = await paymentCollection
+          .aggregate([
+            {
+              $match: matchStage,
+            },
+
+            {
+              $addFields: {
+                productObjectId: { $toObjectId: "$productId" },
+              },
+            },
+
+            {
+              $lookup: {
+                from: "books",
+                localField: "productObjectId",
+                foreignField: "_id",
+                as: "bookDetails",
+              },
+            },
+
+            {
+              $unwind: {
+                path: "$bookDetails",
+                preserveNullAndEmptyArrays: true, 
+              },
+            },
+
+            {
+              $sort: { _id: -1 },
+            },
+          ])
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching user orders:", error);
+        res.status(500).send({ message: "Failed to fetch orders" });
+      }
+    });
+    // Booking delivery related api end here +*+*+*+*+*+*+*+*+**+*
+    // Booking delivery related api end here +*+*+*+*+*+*+*+*+**+*
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
