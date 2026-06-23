@@ -7,6 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { jwtVerify, createRemoteJWKSet } = require("jose-cjs");
 const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -18,6 +19,37 @@ const client = new MongoClient(uri, {
   },
 });
 
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer")) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    req.user = payload;
+
+    // console.log("payload", payload);
+    next();
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const librarianVerify = async (req, res, next) => {
+  const user = req.user;
+  console.log("userInfo", user);
+
+  next();
+};
 async function run() {
   try {
     const myDB = client.db("BookDrop");
@@ -57,13 +89,13 @@ async function run() {
         },
       };
       const result = await userCollection.updateOne(filter, updateDoc);
-      console.log("update from  backend", result);
+
       res.send(result);
     });
     // user related api end here +*+*+*+*+*+*+*+*+**+*
     // Books related api Start here +*+*+*+*+*+*+*+*+**+*
     // post book by librarian
-    app.post("/api/books", async (req, res) => {
+    app.post("/api/books", verifyToken, librarianVerify, async (req, res) => {
       const book = req.body;
       const payload = {
         ...book,
@@ -83,7 +115,7 @@ async function run() {
       }
 
       const result = await bookCollection.find(query).toArray();
-      console.log(userId);
+
       res.send(result);
     });
 
@@ -108,7 +140,6 @@ async function run() {
         },
       };
       const result = await bookCollection.updateOne(filter, updateDoc);
-      console.log("after updateBook", result);
 
       res.send(result);
     });
@@ -185,7 +216,7 @@ async function run() {
             {
               $unwind: {
                 path: "$bookDetails",
-                preserveNullAndEmptyArrays: true, 
+                preserveNullAndEmptyArrays: true,
               },
             },
 
