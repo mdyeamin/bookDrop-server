@@ -26,12 +26,12 @@ const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer")) {
-    return res.status(401).send({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(401).send({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
   try {
     const { payload } = await jwtVerify(token, JWKS);
@@ -46,6 +46,10 @@ const verifyToken = async (req, res, next) => {
 
 const librarianVerify = async (req, res, next) => {
   const user = req.user;
+
+  if (user.role !== "librarian") {
+    return res.status(403).send().json({ message: "Forbidden" });
+  }
   console.log("userInfo", user);
 
   next();
