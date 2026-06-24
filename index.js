@@ -41,19 +41,45 @@ const verifyToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.log(error);
+    return res
+      .status(401)
+      .json({
+        message: error.message || "Unauthorized: Invalid or expired token",
+      });
   }
 };
 
 const librarianVerify = async (req, res, next) => {
   const user = req.user;
 
-  if (user.role !== "librarian") {
-    return res.status(403).send().json({ message: "Forbidden" });
+  if (user?.role !== "librarian") {
+    return res.status(403).json({ message: "Forbidden" });
   }
   console.log("userInfo", user);
 
   next();
 };
+const userVerify = async (req, res, next) => {
+  const user = req.user;
+
+  if (user?.role !== "user") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  console.log("userInfo", user);
+
+  next();
+};
+const adminVerify = async (req, res, next) => {
+  const user = req.user;
+
+  if (user?.role !== "admin") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  console.log("userInfo", user);
+
+  next();
+};
+
 async function run() {
   try {
     const myDB = client.db("BookDrop");
@@ -68,22 +94,20 @@ async function run() {
 
     // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users
-    app.get("/api/users", (req, res) => {
-      const result = userCollection.find().toArray();
-      result.then((data) => {
-        res.send(data);
-      });
+    app.get("/api/users", async(req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result)
     });
-    // delete user by id
-    app.delete("/api/users/:id", async (req, res) => {
+    // delete user by id (admin)
+    app.delete("/api/users/:id", verifyToken,adminVerify, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
 
       res.send(result);
     });
-    // update user role by id
-    app.patch("/api/users/:id", async (req, res) => {
+    // update user role by id (admin)
+    app.patch("/api/users/:id",verifyToken, adminVerify, async (req, res) => {
       const id = req.params.id;
       const role = req.body.role;
       const filter = { _id: new ObjectId(id) };
@@ -124,13 +148,18 @@ async function run() {
     });
 
     //delete librarian's book by id
-    app.delete("/api/books/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const result = await bookCollection.deleteOne(filter);
+    app.delete(
+      "/api/books/:id",
+      verifyToken,
+      librarianVerify,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const result = await bookCollection.deleteOne(filter);
 
-      res.send(result);
-    });
+        res.send(result);
+      },
+    );
 
     // edit librarians's book by id
     app.patch("/api/books/:id", async (req, res) => {
