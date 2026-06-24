@@ -123,7 +123,7 @@ async function run() {
     // user related api end here +*+*+*+*+*+*+*+*+**+*
     // Books related api Start here +*+*+*+*+*+*+*+*+**+*
     // post book by librarian
-    app.post("/api/books", verifyToken, async (req, res) => {
+    app.post("/api/books", verifyToken,librarianVerify, async (req, res) => {
       const book = req.body;
       const payload = {
         ...book,
@@ -151,7 +151,7 @@ async function run() {
     app.delete(
       "/api/books/:id",
       verifyToken,
-      
+      librarianVerify,
       async (req, res) => {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -194,6 +194,23 @@ async function run() {
       res.send(result);
     });
 
+
+// edit librarians's book by id
+
+app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: "unpublish",
+        },
+      };
+      const result = await bookCollection.updateOne(filter, updateDoc);
+
+      res.send(result);
+    });
+
 // manage books by admin *************
 //                       ************* 
 
@@ -212,8 +229,19 @@ async function run() {
       res.send(result);
     });
 
+// admin can delete books
+ app.delete(
+      "/api/admin/books/:id",
+      verifyToken,
+      adminVerify,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const result = await bookCollection.deleteOne(filter);
 
-
+        res.send(result);
+      },
+    );
 
 
 
