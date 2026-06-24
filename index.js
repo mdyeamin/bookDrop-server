@@ -193,6 +193,12 @@ async function run() {
       const result = await bookCollection.findOne(filter);
       res.send(result);
     });
+
+// manage books by admin *************
+//                       ************* 
+
+
+
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
     // Payment related api start here +*+*+*+*+*+*+*+*+**+*
     app.post("/api/payment", async (req, res) => {
