@@ -123,7 +123,7 @@ async function run() {
     // user related api end here +*+*+*+*+*+*+*+*+**+*
     // Books related api Start here +*+*+*+*+*+*+*+*+**+*
     // post book by librarian
-    app.post("/api/books", verifyToken, librarianVerify, async (req, res) => {
+    app.post("/api/books", verifyToken, async (req, res) => {
       const book = req.body;
       const payload = {
         ...book,
@@ -151,7 +151,7 @@ async function run() {
     app.delete(
       "/api/books/:id",
       verifyToken,
-      librarianVerify,
+      
       async (req, res) => {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -162,7 +162,7 @@ async function run() {
     );
 
     // edit librarians's book by id
-    app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
+    app.patch("/api/books/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const bookInfo = req.body;
@@ -196,6 +196,24 @@ async function run() {
 
 // manage books by admin *************
 //                       ************* 
+
+ // update user role by id (admin)
+    app.patch("/api/admin/books/:id",verifyToken,adminVerify, async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await bookCollection.updateOne(filter, updateDoc);
+
+      res.send(result);
+    });
+
+
+
 
 
 
