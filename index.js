@@ -276,6 +276,81 @@ async function run() {
 
 
     // Payment related api end here +*+*+*+*+*+*+*+*+**+*
+
+// Librarian Orders API (Dashboard) start++++++++++++++++++++
+
+
+
+app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) => {
+      try {
+        const librarianId = req.query.librarianid;
+
+        if (!librarianId) {
+          return res.status(400).send({ message: "Librarian ID is required" });
+        }
+
+        const result = await paymentCollection.aggregate([
+          
+          {
+            $addFields: {
+              productObjectId: { $toObjectId: "$productId" },
+              buyerObjectId: { $toObjectId: "$userId" } 
+            }
+          },
+          
+          {
+            $lookup: {
+              from: "books",
+              localField: "productObjectId",
+              foreignField: "_id",
+              as: "bookDetails"
+            }
+          },
+         
+          {
+            $unwind: "$bookDetails"
+          },
+          
+          {
+            $match: {
+              "bookDetails.userId": librarianId
+            }
+          },
+          
+          {
+            $lookup: {
+              from: "user",
+              localField: "buyerObjectId",
+              foreignField: "_id",
+              as: "buyerDetails"
+            }
+          },
+          
+          {
+            $unwind: {
+              path: "$buyerDetails",
+              preserveNullAndEmptyArrays: true
+            }
+          },
+         
+          {
+            $sort: { _id: -1 }
+          }
+        ]).toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching librarian orders:", error);
+        res.status(500).send({ message: "Failed to fetch orders" });
+      }
+    });
+// Librarian Orders API (Dashboard) end++++++++++++++++++++
+
+
+
+update order status by librarianVerify
+
+
     // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
     // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
     app.get("/api/my/order", async (req, res) => {
@@ -326,6 +401,9 @@ async function run() {
     });
     // Booking related delivery api end here +*+*+*+*+*+*+*+*+**+*
     
+
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
