@@ -41,11 +41,9 @@ const verifyToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.log(error);
-    return res
-      .status(401)
-      .json({
-        message: error.message || "Unauthorized: Invalid or expired token",
-      });
+    return res.status(401).json({
+      message: error.message || "Unauthorized: Invalid or expired token",
+    });
   }
 };
 
@@ -86,20 +84,21 @@ async function run() {
     const userCollection = myDB.collection("user");
     const bookCollection = myDB.collection("books");
     const paymentCollection = myDB.collection("payments"); // user payment korar por ekhane data asbe
+    const userReviewCollection = myDB.collection("review")
     app.get("/", (req, res) => {
       res.send("Hello World!");
     });
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users (admin)
-    app.get("/api/users",verifyToken,adminVerify, async(req, res) => {
+    app.get("/api/users", verifyToken, adminVerify, async (req, res) => {
       const result = await userCollection.find().toArray();
-      res.send(result)
+      res.send(result);
     });
     // delete user by id (admin)
-    app.delete("/api/users/:id", verifyToken,adminVerify, async (req, res) => {
+    app.delete("/api/users/:id", verifyToken, adminVerify, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
@@ -107,7 +106,7 @@ async function run() {
       res.send(result);
     });
     // update user role by id (admin)
-    app.patch("/api/users/:id",verifyToken, adminVerify, async (req, res) => {
+    app.patch("/api/users/:id", verifyToken, adminVerify, async (req, res) => {
       const id = req.params.id;
       const role = req.body.role;
       const filter = { _id: new ObjectId(id) };
@@ -123,7 +122,7 @@ async function run() {
     // user related api end here +*+*+*+*+*+*+*+*+**+*
     // Books related api Start here +*+*+*+*+*+*+*+*+**+*
     // post book by librarian
-    app.post("/api/books", verifyToken,librarianVerify, async (req, res) => {
+    app.post("/api/books", verifyToken, librarianVerify, async (req, res) => {
       const book = req.body;
       const payload = {
         ...book,
@@ -162,20 +161,25 @@ async function run() {
     );
 
     // edit librarians's book by id
-    app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const bookInfo = req.body;
-      const updateDoc = {
-        $set: {
-          ...bookInfo,
-          updatedAt: new Date(),
-        },
-      };
-      const result = await bookCollection.updateOne(filter, updateDoc);
+    app.patch(
+      "/api/books/:id",
+      verifyToken,
+      librarianVerify,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const bookInfo = req.body;
+        const updateDoc = {
+          $set: {
+            ...bookInfo,
+            updatedAt: new Date(),
+          },
+        };
+        const result = await bookCollection.updateOne(filter, updateDoc);
 
-      res.send(result);
-    });
+        res.send(result);
+      },
+    );
 
     // get all books for homepage (non-secure)
     app.get("/api/public/books", async (req, res) => {
@@ -194,44 +198,48 @@ async function run() {
       res.send(result);
     });
 
+    // edit librarians's book by id
 
-// edit librarians's book by id
+    // app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
+    //       const id = req.params.id;
+    //       const status = req.body.status;
+    //       const filter = { _id: new ObjectId(id) };
+    //       const updateDoc = {
+    //         $set: {
+    //           status: "unpublish",
+    //         },
+    //       };
+    //       const result = await bookCollection.updateOne(filter, updateDoc);
 
-// app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
-//       const id = req.params.id;
-//       const status = req.body.status;
-//       const filter = { _id: new ObjectId(id) };
-//       const updateDoc = {
-//         $set: {
-//           status: "unpublish",
-//         },
-//       };
-//       const result = await bookCollection.updateOne(filter, updateDoc);
+    //       res.send(result);
+    //     });
 
-//       res.send(result);
-//     });
+    // manage books by admin *************
+    //                       *************
 
-// manage books by admin *************
-//                       ************* 
+    // update user role by id (admin)
+    app.patch(
+      "/api/admin/books/:id",
+      verifyToken,
+      adminVerify,
+      async (req, res) => {
+        const id = req.params.id;
+        const bookInfo = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            ...bookInfo,
+            updatedAt: new Date(),
+          },
+        };
+        const result = await bookCollection.updateOne(filter, updateDoc);
 
- // update user role by id (admin)
-    app.patch("/api/admin/books/:id",verifyToken,adminVerify, async (req, res) => {
-      const id = req.params.id;
-      const bookInfo = req.body;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          ...bookInfo,
-          updatedAt: new Date()
-        },
-      };
-      const result = await bookCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      },
+    );
 
-      res.send(result);
-    });
-
-// admin can delete books
- app.delete(
+    // admin can delete books
+    app.delete(
       "/api/admin/books/:id",
       verifyToken,
       adminVerify,
@@ -244,31 +252,29 @@ async function run() {
       },
     );
 
-
-
     // Books related api end here +*+*+*+*+*+*+*+*+**+*
     // Payment related api start here +*+*+*+*+*+*+*+*+**+*
     app.post("/api/payment", async (req, res) => {
-      const { sessionId, userId, price, userEmail, title, productId } =
-        req.body;
-
-      const isExist = await paymentCollection.findOne({ sessionId });
+      const order = req.body;
+      const filter = { sessionId: order?.sessionId };
+      const isExist = await paymentCollection.findOne(filter);
 
       if (isExist) {
         return res.send({ message: "already exist" });
       }
-
-      const result = await paymentCollection.insertOne({
-        sessionId,
-        userId,
-        price,
-        userEmail,
-        title,
-        productId,
-      });
+      const payload = {
+        ...order,
+        OrderAt: new Date(),
+      };
+      const result = await paymentCollection.insertOne(payload);
 
       res.send(result);
     });
+
+
+
+
+
     // Payment related api end here +*+*+*+*+*+*+*+*+**+*
     // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
     // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
@@ -322,7 +328,7 @@ async function run() {
     // Booking delivery related api end here +*+*+*+*+*+*+*+*+**+*
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
