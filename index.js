@@ -89,7 +89,7 @@ async function run() {
       res.send("Hello World!");
     });
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
     // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users (admin)
@@ -134,7 +134,7 @@ async function run() {
       res.send(result);
     });
     // get all books by current librarian
-    app.get("/api/books", async (req, res) => {
+    app.get("/api/books",  async (req, res) => {
       const userId = req.query.userid;
       const query = {};
       if (userId) {
@@ -217,7 +217,7 @@ async function run() {
     // manage books by admin *************
     //                       *************
 
-    // update user role by id (admin)
+    // update user ordered books status by book id ( only admin can change status)
     app.patch(
       "/api/admin/books/:id",
       verifyToken,
@@ -324,11 +324,11 @@ async function run() {
         res.status(500).send({ message: "Failed to fetch orders" });
       }
     });
-    // Booking delivery related api end here +*+*+*+*+*+*+*+*+**+*
-    // Booking delivery related api end here +*+*+*+*+*+*+*+*+**+*
+    // Booking related delivery api end here +*+*+*+*+*+*+*+*+**+*
+    
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
