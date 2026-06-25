@@ -162,7 +162,7 @@ async function run() {
     );
 
     // edit librarians's book by id
-    app.patch("/api/books/:id",verifyToken, async (req, res) => {
+    app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const bookInfo = req.body;
@@ -197,19 +197,19 @@ async function run() {
 
 // edit librarians's book by id
 
-app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
-      const id = req.params.id;
-      const status = req.body.status;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          status: "unpublish",
-        },
-      };
-      const result = await bookCollection.updateOne(filter, updateDoc);
+// app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
+//       const id = req.params.id;
+//       const status = req.body.status;
+//       const filter = { _id: new ObjectId(id) };
+//       const updateDoc = {
+//         $set: {
+//           status: "unpublish",
+//         },
+//       };
+//       const result = await bookCollection.updateOne(filter, updateDoc);
 
-      res.send(result);
-    });
+//       res.send(result);
+//     });
 
 // manage books by admin *************
 //                       ************* 
@@ -217,11 +217,12 @@ app.patch("/api/books/:id",verifyToken,librarianVerify, async (req, res) => {
  // update user role by id (admin)
     app.patch("/api/admin/books/:id",verifyToken,adminVerify, async (req, res) => {
       const id = req.params.id;
-      const status = req.body.status;
+      const bookInfo = req.body;
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          status: status,
+          ...bookInfo,
+          updatedAt: new Date()
         },
       };
       const result = await bookCollection.updateOne(filter, updateDoc);
