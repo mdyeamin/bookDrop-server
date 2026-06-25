@@ -93,7 +93,7 @@ async function run() {
 
     // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users (admin)
-    app.get("/api/users", verifyToken, adminVerify, async (req, res) => {
+    app.get("/api/users",  async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
