@@ -344,11 +344,36 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
         res.status(500).send({ message: "Failed to fetch orders" });
       }
     });
+    // update order status by librarianVerify
+
+    
+    // Update order status by Librarian
+    app.patch("/api/librarian/orders/:id", verifyToken, librarianVerify, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedData = req.body;
+
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            ...updatedData,
+            updatedAt: new Date(), 
+          },
+        };
+
+        const result = await paymentCollection.updateOne(filter, updateDoc);
+        console.log(result);
+        
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating order status:", error);
+        res.status(500).send({ message: "Failed to update order status" });
+      }
+    });
 // Librarian Orders API (Dashboard) end++++++++++++++++++++
 
 
 
-update order status by librarianVerify
 
 
     // Booking delivery related api start here +*+*+*+*+*+*+*+*+**+*
