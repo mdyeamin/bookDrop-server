@@ -418,6 +418,58 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
     });
     // update order status by librarianVerify
 
+
+    // admin all order can see
+    // Get ALL orders for Admin Dashboard
+    app.get("/api/admin/orders", verifyToken, adminVerify, async (req, res) => {
+      try {
+        const result = await paymentCollection.aggregate([
+          {
+            $addFields: {
+              productObjectId: { $toObjectId: "$productId" },
+              buyerObjectId: { $toObjectId: "$userId" } 
+            }
+          },
+          {
+            $lookup: {
+              from: "books",
+              localField: "productObjectId",
+              foreignField: "_id",
+              as: "bookDetails"
+            }
+          },
+          {
+            // বইয়ের ডিটেইলস আনপ্যাক করা হচ্ছে
+            $unwind: "$bookDetails"
+          },
+          // ⚠️ এখানে $match ফিল্টারটি বাদ দেওয়া হয়েছে যাতে অ্যাডমিন সব লিব্রারিয়ানের অর্ডার দেখতে পায়
+          {
+            $lookup: {
+              from: "user",
+              localField: "buyerObjectId",
+              foreignField: "_id",
+              as: "buyerDetails"
+            }
+          },
+          {
+            // ইউজারের ডিটেইলস আনপ্যাক করা হচ্ছে
+            $unwind: {
+              path: "$buyerDetails",
+              preserveNullAndEmptyArrays: true
+            }
+          },
+          {
+            // নতুন অর্ডারগুলো আগে দেখানোর জন্য সর্ট
+            $sort: { _id: -1 }
+          }
+        ]).toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching admin orders:", error);
+        res.status(500).send({ message: "Failed to fetch all orders" });
+      }
+    });
     
     // Update order status by Librarian
     app.patch("/api/librarian/orders/:id", verifyToken, librarianVerify, async (req, res) => {
