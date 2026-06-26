@@ -182,11 +182,83 @@ async function run() {
     );
 
     // get all books for homepage (non-secure)
+    // ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+    // get all books for homepage with Search & Filter (non-secure)
+    // get all books for homepage with Search & Filter & Pagination (public only)
+   // Route to fetch books for the public homepage with search, filtering, and pagination
     app.get("/api/public/books", async (req, res) => {
-      const result = await bookCollection.find().toArray();
+      try {
+        // Extract query parameters with default pagination values (page 1, limit 8 books per page)
+        const { search, category, fee, page = 1, limit = 8 } = req.query;
+        
+        // Base query: Only fetch books that are approved for public viewing
+        let query = { status: "approved" };
 
-      res.send(result);
+        // 1. Search Logic: Search for matches in either 'title' or 'author' (case-insensitive)
+        if (search) {
+          query.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { author: { $regex: search, $options: "i" } },
+          ];
+        }
+
+        // 2. Category Filter: Apply filter only if a specific category is selected
+        if (category && category !== "all") {
+          query.category = category;
+        }
+
+        // 3. Delivery Fee Filter: Apply advanced filtering based on price ranges
+        if (fee && fee !== "all") {
+          if (fee === "free") {
+            // Match exactly free delivery (e.g., 0, "0", empty string, or null)
+            query.deliveryFee = { $in: [0, "0", "", null] };
+          } else if (fee === "low") {
+            // Match delivery fee strictly greater than $0 and less than $5
+            query.$expr = {
+              $and: [
+                { $gt: [{ $convert: { input: "$deliveryFee", to: "double", onError: 999, onNull: 999 } }, 0] },
+                { $lt: [{ $convert: { input: "$deliveryFee", to: "double", onError: 999, onNull: 999 } }, 5] }
+              ]
+            };
+          } else if (fee === "high") {
+            // Match delivery fee greater than or equal to $5
+            query.$expr = {
+              $gte: [{ $convert: { input: "$deliveryFee", to: "double", onError: 0, onNull: 0 } }, 5]
+            };
+          }
+        }
+
+        // --- Pagination Logic ---
+        
+        // Parse strings to integers for mathematical operations
+        const pageNumber = parseInt(page);
+        const limitNumber = parseInt(limit);
+        
+        // Calculate the number of documents to skip based on the current page
+        const skip = (pageNumber - 1) * limitNumber;
+
+        // Get the total count of documents matching the filter criteria
+        const totalBooks = await bookCollection.countDocuments(query);
+        
+        // Calculate the total number of pages required
+        const totalPages = Math.ceil(totalBooks / limitNumber);
+
+        // Fetch the exact subset of books: sorted by newest, skipping previous pages, and limiting the output
+        const books = await bookCollection
+          .find(query)
+          .sort({ _id: -1 })
+          .skip(skip)
+          .limit(limitNumber)
+          .toArray();
+        
+        // Send the paginated response object back to the client
+        res.send({ books, totalPages, currentPage: pageNumber });
+      } catch (error) {
+        console.error("Error fetching public books:", error);
+        res.status(500).send({ message: "Failed to fetch books" });
+      }
     });
+    // ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 
     // get single book by id (for details page)
     app.get("/api/public/books/:id", async (req, res) => {
