@@ -84,7 +84,7 @@ async function run() {
     const userCollection = myDB.collection("user");
     const bookCollection = myDB.collection("books");
     const paymentCollection = myDB.collection("payments"); // user payment korar por ekhane data asbe
-    const userReviewCollection = myDB.collection("review")
+    const userReviewCollection = myDB.collection("reviews")
     app.get("/", (req, res) => {
       res.send("Hello World!");
     });
@@ -424,12 +424,14 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
     app.get("/api/admin/orders", verifyToken, adminVerify, async (req, res) => {
       try {
         const result = await paymentCollection.aggregate([
+         
           {
             $addFields: {
               productObjectId: { $toObjectId: "$productId" },
-              buyerObjectId: { $toObjectId: "$userId" } 
+              buyerObjectId: { $toObjectId: "$userId" }
             }
           },
+          
           {
             $lookup: {
               from: "books",
@@ -439,10 +441,27 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
             }
           },
           {
-            // বইয়ের ডিটেইলস আনপ্যাক করা হচ্ছে
             $unwind: "$bookDetails"
           },
-          // ⚠️ এখানে $match ফিল্টারটি বাদ দেওয়া হয়েছে যাতে অ্যাডমিন সব লিব্রারিয়ানের অর্ডার দেখতে পায়
+          
+          {
+            $addFields: {
+              librarianObjectId: { $toObjectId: "$bookDetails.userId" } 
+            }
+          },
+          
+          {
+            $lookup: {
+              from: "user", 
+              localField: "librarianObjectId",
+              foreignField: "_id",
+              as: "librarianDetails"
+            }
+          },
+          {
+            $unwind: { path: "$librarianDetails", preserveNullAndEmptyArrays: true }
+          },
+          
           {
             $lookup: {
               from: "user",
@@ -452,14 +471,13 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
             }
           },
           {
-            // ইউজারের ডিটেইলস আনপ্যাক করা হচ্ছে
             $unwind: {
               path: "$buyerDetails",
               preserveNullAndEmptyArrays: true
             }
           },
+          
           {
-            // নতুন অর্ডারগুলো আগে দেখানোর জন্য সর্ট
             $sort: { _id: -1 }
           }
         ]).toArray();
@@ -550,7 +568,20 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
     });
     // Booking related delivery api end here +*+*+*+*+*+*+*+*+**+*
     
+// user review section api start (((((((((((((((((((((())))))))))))))))))))))
+    //user review post api
+    app.post('/api/user/review',async(req,res)=>{
+      const body = req.body
+      const payload = {
+        ...body,
+        createdAt: new Date()
+      }
+        const result = await userReviewCollection.insertOne(payload)
+        console.log("review post backend",result);
+        res.send(result)
+    })
 
+// user review section api end (((((((((((((((((((((())))))))))))))))))))))
 
 
 
