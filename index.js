@@ -89,7 +89,7 @@ async function run() {
       res.send("Hello World!");
     });
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // user related api start here +*+*+*+*+*+*+*+*+**+*
     // get all users (admin)
@@ -569,24 +569,56 @@ app.get("/api/librarian/orders", verifyToken, librarianVerify, async (req, res) 
     // Booking related delivery api end here +*+*+*+*+*+*+*+*+**+*
     
 // user review section api start (((((((((((((((((((((())))))))))))))))))))))
+    //user review get api
+    app.get ('/api/user/review',  async(req,res)=>{
+      const result = await userReviewCollection.find().toArray()
+      res.send(result)
+    })
     //user review post api
-    app.post('/api/user/review',async(req,res)=>{
+    app.post('/api/user/review', verifyToken, async(req,res)=>{
       const body = req.body
       const payload = {
         ...body,
         createdAt: new Date()
       }
-        const result = await userReviewCollection.insertOne(payload)
-        console.log("review post backend",result);
-        res.send(result)
+      const result = await userReviewCollection.insertOne(payload)
+      
+      res.send(result)
     })
+    //user review delete api
+    app.delete('/api/user/review/:id',verifyToken, async(req,res)=>{
+      const id = req.params.id
+      const filter = {_id : new ObjectId(id)}
+      const result = await userReviewCollection.deleteOne(filter)
+      
+      
+      res.send(result) 
+    })
+    //user review update api
+     app.patch("/api/user/review/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const reviewData = req.body
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          ...reviewData,
+          updatedAt : new Date()
+        },
+      };
+      const result = await userReviewCollection.updateOne(filter, updateDoc);
+      console.log('after edit review backend',result);
+
+      res.send(result);
+    });
+  
+
 
 // user review section api end (((((((((((((((((((((())))))))))))))))))))))
 
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
